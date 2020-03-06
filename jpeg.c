@@ -4,7 +4,7 @@
 #include <jerror.h>
 #include <jpeglib.h>
 #include <setjmp.h>
-#include <python3.7/Python.h>
+#include <Python.h>
 
 
 // {{{ struct my_error_mgr
@@ -154,7 +154,7 @@ PyObject* read_file(const char *path)
    PyObject* comp_info = PyList_New(0);
    assert(PyList_Check(comp_info));
 
-   for(size_t ci = 0; ci < cinfo.num_components; ci++) 
+   for(int ci = 0; ci < cinfo.num_components; ci++) 
    {
       PyObject *comp = PyDict_New();
       assert(PyDict_Check(comp));
@@ -307,7 +307,7 @@ PyObject* read_file(const char *path)
 
 
 
-   for(size_t ci=0; ci<cinfo.num_components; ci++) 
+   for(int ci=0; ci<cinfo.num_components; ci++) 
    {
       jpeg_component_info *compptr = cinfo.comp_info + ci;
 
