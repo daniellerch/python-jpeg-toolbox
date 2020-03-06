@@ -1,15 +1,16 @@
 #!/usr/bin/python3
 
+import sys
+import numpy as np
 from pprint import pprint
-from ctypes import *
-
-def load(path):
-   jpeg = CDLL('./jpeg.so')
-   jpeg.read_file.restype = py_object
-   r = jpeg.read_file(path.encode())
-   return r
+import jpeg_toolbox
 
 
-r = load('lena.jpg')
-pprint(r)
+r = jpeg_toolbox.load('lena.jpg')
+#pprint(r)
+print(r.keys())
+print(r["image_width"])
+#pprint(r["coef_arrays"])
+#np.set_printoptions(threshold=sys.maxsize)
+print(r["coef_arrays"])
 
