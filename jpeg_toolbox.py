@@ -34,3 +34,8 @@ def load(path, use_numpy=True):
    return r
 
 
+def save(data, path):
+   jpeg = CDLL('./jpeg.so')
+   jpeg.write_file.argtypes = py_object,
+   jpeg.write_file(data, path.encode())
+

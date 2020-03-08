@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <jerror.h>
 #include <jpeglib.h>
+#include <jpegint.h>
 #include <setjmp.h>
 #include <Python.h>
 
@@ -72,6 +73,30 @@ PyObject* list_append_float(PyObject* list, float value)
    return list;
 }
 // }}}
+
+// {{{ dict_get_int()
+int dict_get_int(PyObject *dict, const char* key)
+{
+   PyObject *py_key = Py_BuildValue("s", key);
+   PyObject* item = PyDict_GetItem(dict, py_key);
+   int value = (int)PyLong_AsLong(item);
+   Py_DecRef(py_key);
+
+   return value;
+}
+// }}}
+
+// {{{ dict_get_object()
+PyObject *dict_get_object(PyObject *dict, const char* key)
+{
+   PyObject *py_key = Py_BuildValue("s", key);
+   PyObject* item = PyDict_GetItem(dict, py_key);
+   Py_DecRef(py_key);
+
+   return item;
+}
+// }}}
+
 
 // {{{ read_file()
 PyObject* read_file(const char *path)
@@ -305,8 +330,6 @@ PyObject* read_file(const char *path)
    PyObject* coef_arrays = PyList_New(0);
    assert(PyList_Check(coef_arrays));
 
-
-
    for(int ci=0; ci<cinfo.num_components; ci++) 
    {
       jpeg_component_info *compptr = cinfo.comp_info + ci;
@@ -358,7 +381,216 @@ PyObject* read_file(const char *path)
 }
 // }}}
 
+// {{{ write_file()
+void write_file(PyObject *data, const char *path)
+{
+   FILE *f = NULL;
+   struct jpeg_compress_struct cinfo;
+   struct my_error_mgr jerr;
+
+   if((f = fopen(path, "wb")) == NULL)
+   {
+      fprintf(stderr, "Can not open file: %s\n", path);
+      return;
+   }
+
+   /* set up the normal JPEG error routines, then override error_exit. */
+   cinfo.err = jpeg_std_error(&jerr.pub);
+   jerr.pub.error_exit = my_error_exit;
+   jerr.pub.output_message = my_output_message;
+
+   /* establish the setjmp return context for my_error_exit to use. */
+   if (setjmp(jerr.setjmp_buffer)) {
+      jpeg_destroy_compress(&cinfo);
+      fclose(f);
+      fprintf(stderr, "Error writing to file: %s\n", path);
+      return;
+   }
+
+   /* initialize JPEG decompression object */
+   jpeg_create_compress(&cinfo);
+
+   /* Set the compression object with our parameters */
+   cinfo.image_width = dict_get_int(data, "image_width");
+   cinfo.image_height = dict_get_int(data, "image_height");
+   cinfo.input_components = dict_get_int(data, "image_components");
+   cinfo.in_color_space = dict_get_int(data, "image_color_space");
+
+   /* write the output file */
+   jpeg_stdio_dest(&cinfo, f);
+
+   /* set default parameters */
+   jpeg_set_defaults(&cinfo);
+
+   //cinfo.optimize_coding = dict_get_int(data, "optimize_coding"); XXX
+   cinfo.num_components = dict_get_int(data, "jpeg_components");
+   cinfo.jpeg_color_space = dict_get_int(data, "jpeg_color_space");
+
+   /* support for progressive mode */
+   if(dict_get_int(data, "progressive_mode")) 
+      jpeg_simple_progression(&cinfo);
+
+   /* Component info */
+   PyObject *comp_info = dict_get_object(data, "comp_info");
+   for(int ci=0; ci<cinfo.num_components; ci++)
+   {
+      PyObject* item = PyList_GetItem(comp_info, ci);
+      cinfo.comp_info[ci].component_id = dict_get_int(item, "component_id");
+      cinfo.comp_info[ci].h_samp_factor = dict_get_int(item, "h_samp_factor");
+      cinfo.comp_info[ci].v_samp_factor = dict_get_int(item, "v_samp_factor");
+      cinfo.comp_info[ci].quant_tbl_no = dict_get_int(item, "quant_tbl_no");
+      cinfo.comp_info[ci].ac_tbl_no = dict_get_int(item, "ac_tbl_no");
+      cinfo.comp_info[ci].dc_tbl_no = dict_get_int(item, "dc_tbl_no");
+   }
+
+   /* DCT coefficients */
+   jvirt_barray_ptr *coef_arrays = (jvirt_barray_ptr *)
+      (cinfo.mem->alloc_small) ((j_common_ptr) &cinfo, JPOOL_IMAGE,
+            sizeof(jvirt_barray_ptr) * cinfo.num_components);
+   for(int ci=0; ci<cinfo.num_components; ci++)
+   {
+      jpeg_component_info *compptr = cinfo.comp_info + ci;
+      compptr->height_in_blocks = cinfo.image_width / DCTSIZE;
+      compptr->width_in_blocks = cinfo.image_height / DCTSIZE;
+
+      coef_arrays[ci] = (cinfo.mem->request_virt_barray)
+         ((j_common_ptr) &cinfo, JPOOL_IMAGE, TRUE,
+          (JDIMENSION) jround_up((long) compptr->width_in_blocks,
+             (long) compptr->h_samp_factor),
+          (JDIMENSION) jround_up((long) compptr->height_in_blocks,
+             (long) compptr->v_samp_factor),
+          (JDIMENSION) compptr->v_samp_factor);
+   }
+
+   jpeg_write_coefficients(&cinfo, coef_arrays);
+
+   /* populate DCT coefficients */
+   PyObject *py_coef_arrays = dict_get_object(data, "coef_arrays");
+   for(int ci=0; ci<cinfo.num_components; ci++)
+   {
+      PyObject* list = PyList_GetItem(py_coef_arrays, ci);
+      jpeg_component_info *compptr = cinfo.comp_info + ci;
+
+      for(size_t blk_y = 0; blk_y < compptr->height_in_blocks; blk_y++)
+      {
+         JBLOCKARRAY buffer = (cinfo.mem->access_virt_barray)
+            ((j_common_ptr) &cinfo, coef_arrays[ci], blk_y, 1, TRUE);
+
+         for(size_t blk_x = 0; blk_x < compptr->width_in_blocks; blk_x++)
+         {
+            PyObject* row = PyList_GetItem(list, blk_y*compptr->height_in_blocks+blk_x);
+
+            JCOEFPTR bufptr = buffer[0][blk_x];
+            for(size_t i = 0; i < DCTSIZE; i++)
+            {
+               PyObject* col = PyList_GetItem(row, i);
+               for(size_t j = 0; j < DCTSIZE; j++)
+               {
+                  PyObject* item = PyList_GetItem(col, j);
+                  double value = PyFloat_AsDouble(item);
+                  bufptr[i*DCTSIZE+j] = (JCOEF) value;
+               }
+            }
+         }
+      }
+   }
+
+
+   /* Quantization tables */
+   PyObject *quant_tables = dict_get_object(data, "quant_tables");
+   ssize_t n;
+   for(n=0; n<PyList_Size(quant_tables); n++)
+   {
+      if(cinfo.quant_tbl_ptrs[n] == NULL)
+         cinfo.quant_tbl_ptrs[n] = jpeg_alloc_quant_table((j_common_ptr) &cinfo);
+
+      PyObject* row = PyList_GetItem(quant_tables, n);
+      for(size_t i=0; i<DCTSIZE; i++) 
+      {
+         PyObject* col = PyList_GetItem(row, i);
+         for(size_t j=0; j<DCTSIZE; j++) 
+         {
+            PyObject* item = PyList_GetItem(col, j);
+            int t = PyLong_AsLong(item);   
+
+            if (t<1 || t>65535)
+            {
+               fprintf(stderr, "Quantization table entries not in range 1..65535");
+               return;
+            }
+            cinfo.quant_tbl_ptrs[n]->quantval[i*DCTSIZE+j] = (UINT16) t;
+         }
+      }
+   }
+   
+   for(; n < NUM_QUANT_TBLS; n++)
+      cinfo.quant_tbl_ptrs[n] = NULL;
+
+
+   /* AC/DC Huffman tables */
+   if (cinfo.optimize_coding == FALSE)
+   {
+      PyObject *ac_huff_tables = dict_get_object(data, "ac_huff_tables");
+      for(ssize_t n=0; n<PyList_Size(ac_huff_tables); n++)
+      {
+         if(cinfo.ac_huff_tbl_ptrs[n] == NULL)
+            cinfo.ac_huff_tbl_ptrs[n] = 
+               jpeg_alloc_huff_table((j_common_ptr) &cinfo);
+
+         PyObject* item = PyList_GetItem(ac_huff_tables, n);
+         PyObject* counts = dict_get_object(item, "counts");
+         PyObject* symbols = dict_get_object(item, "symbols");
+
+         for(size_t i=1; i<=16; i++)
+         {
+            PyObject *item = PyList_GetItem(counts, i-1);
+            int value = PyLong_AsLong(item);   
+            cinfo.ac_huff_tbl_ptrs[n]->bits[i] = (UINT8) value;
+         }
+
+         for(size_t i=0; i<256; i++)
+         {
+            PyObject *item = PyList_GetItem(symbols, i);
+            int value = PyLong_AsLong(item);   
+            cinfo.ac_huff_tbl_ptrs[n]->huffval[i] = (UINT8) value;
+         }
+      }
+
+      PyObject *dc_huff_tables = dict_get_object(data, "dc_huff_tables");
+      for(ssize_t n=0; n<PyList_Size(dc_huff_tables); n++)
+      {
+         if(cinfo.dc_huff_tbl_ptrs[n] == NULL)
+            cinfo.dc_huff_tbl_ptrs[n] = 
+               jpeg_alloc_huff_table((j_common_ptr) &cinfo);
+
+         PyObject* item = PyList_GetItem(dc_huff_tables, n);
+         PyObject* counts = dict_get_object(item, "counts");
+         PyObject* symbols = dict_get_object(item, "symbols");
+
+         for(size_t i=1; i<=16; i++)
+         {
+            PyObject *item = PyList_GetItem(counts, i-1);
+            int value = PyLong_AsLong(item);   
+            cinfo.dc_huff_tbl_ptrs[n]->bits[i] = (UINT8) value;
+         }
+
+         for(size_t i=0; i<256; i++)
+         {
+            PyObject *item = PyList_GetItem(symbols, i);
+            int value = PyLong_AsLong(item);   
+            cinfo.dc_huff_tbl_ptrs[n]->huffval[i] = (UINT8) value;
+         }
+      }
+   }
 
 
 
+
+
+
+  jpeg_finish_compress(&cinfo);
+  jpeg_destroy_compress(&cinfo);
+  fclose(f);
+}
+// }}}
 
