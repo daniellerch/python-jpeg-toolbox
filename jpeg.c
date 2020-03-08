@@ -101,6 +101,8 @@ PyObject *dict_get_object(PyObject *dict, const char* key)
 // {{{ read_file()
 PyObject* read_file(const char *path)
 {
+   PyGILState_STATE gstate = PyGILState_Ensure();
+
    PyObject *result = PyDict_New();
    assert(PyDict_Check(result));
 
@@ -117,6 +119,7 @@ PyObject* read_file(const char *path)
    if((f = fopen(path, "rb")) == NULL)
    {
       fprintf(stderr, "Can not open file: %s\n", path);
+      PyGILState_Release(gstate);
       return result;
    }
 
@@ -130,6 +133,7 @@ PyObject* read_file(const char *path)
       jpeg_destroy_decompress(&cinfo);
       fclose(f);
       fprintf(stderr, "Error reading file: %s\n", path);
+      PyGILState_Release(gstate);
       return result;
    }
 
@@ -162,6 +166,7 @@ PyObject* read_file(const char *path)
          break;
       default:
          fprintf(stderr, "Unknown color space: %d\n", cinfo.out_color_space);
+         PyGILState_Release(gstate);
          return result;
    }
 
@@ -377,6 +382,8 @@ PyObject* read_file(const char *path)
    jpeg_destroy_decompress(&cinfo);
    fclose(f);
 
+   PyGILState_Release(gstate);
+
    return result;
 }
 // }}}
@@ -384,6 +391,8 @@ PyObject* read_file(const char *path)
 // {{{ write_file()
 void write_file(PyObject *data, const char *path)
 {
+   PyGILState_STATE gstate = PyGILState_Ensure();
+
    FILE *f = NULL;
    struct jpeg_compress_struct cinfo;
    struct my_error_mgr jerr;
@@ -391,6 +400,7 @@ void write_file(PyObject *data, const char *path)
    if((f = fopen(path, "wb")) == NULL)
    {
       fprintf(stderr, "Can not open file: %s\n", path);
+      PyGILState_Release(gstate);
       return;
    }
 
@@ -404,6 +414,7 @@ void write_file(PyObject *data, const char *path)
       jpeg_destroy_compress(&cinfo);
       fclose(f);
       fprintf(stderr, "Error writing to file: %s\n", path);
+      PyGILState_Release(gstate);
       return;
    }
 
@@ -516,6 +527,7 @@ void write_file(PyObject *data, const char *path)
             if (t<1 || t>65535)
             {
                fprintf(stderr, "Quantization table entries not in range 1..65535");
+               PyGILState_Release(gstate);
                return;
             }
             cinfo.quant_tbl_ptrs[n]->quantval[i*DCTSIZE+j] = (UINT16) t;
@@ -588,9 +600,11 @@ void write_file(PyObject *data, const char *path)
 
 
 
-  jpeg_finish_compress(&cinfo);
-  jpeg_destroy_compress(&cinfo);
-  fclose(f);
+   jpeg_finish_compress(&cinfo);
+   jpeg_destroy_compress(&cinfo);
+   fclose(f);
+
+   PyGILState_Release(gstate);
 }
 // }}}
 

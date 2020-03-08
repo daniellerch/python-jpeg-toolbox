@@ -5,6 +5,7 @@ import numpy as np
 
 def load(path, use_numpy=True):
    jpeg = CDLL('./jpeg.so')
+   jpeg.write_file.argtypes = c_char_p,
    jpeg.read_file.restype = py_object
    r = jpeg.read_file(path.encode())
 
@@ -36,6 +37,6 @@ def load(path, use_numpy=True):
 
 def save(data, path):
    jpeg = CDLL('./jpeg.so')
-   jpeg.write_file.argtypes = py_object,
+   jpeg.write_file.argtypes = py_object,c_char_p
    jpeg.write_file(data, path.encode())
 
