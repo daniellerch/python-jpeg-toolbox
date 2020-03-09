@@ -8,7 +8,7 @@ This project is in development and it is an unstable version. Please use it care
 pip3 install git+https://github.com/daniellerch/python-jpeg-toolbox --user
 ```
 
-## Unnstall
+## Uninstall
 ```bash
 pip3 uninstall jpeg-toolbox
 ```
