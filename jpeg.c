@@ -114,7 +114,6 @@ PyObject* read_file(const char *path)
    PyObject *row = NULL;
    PyObject *col = NULL;
    PyObject *dict = NULL;
-   PyObject *list = NULL;
 
    if((f = fopen(path, "rb")) == NULL)
    {
@@ -339,11 +338,14 @@ PyObject* read_file(const char *path)
    {
       jpeg_component_info *compptr = cinfo.comp_info + ci;
 
-      list = PyList_New(0);
-      assert(PyList_Check(list));
+      PyObject *py_blk_y = PyList_New(0);
+      assert(PyList_Check(py_blk_y));
       
       for(size_t blk_y=0; blk_y<compptr->height_in_blocks; blk_y++)
       {
+         PyObject *py_blk_x = PyList_New(0);
+         assert(PyList_Check(py_blk_x));
+
          JBLOCKARRAY buffer = (cinfo.mem->access_virt_barray)
     	   ((j_common_ptr) &cinfo, coefs[ci], blk_y, 1, FALSE);
          for(size_t blk_x=0; blk_x<compptr->width_in_blocks; blk_x++)
@@ -364,13 +366,15 @@ PyObject* read_file(const char *path)
                PyList_Append(row, col);
                Py_DecRef(col);
             }
-            PyList_Append(list, row);
+            PyList_Append(py_blk_x, row);
             Py_DecRef(row);
          }
+         PyList_Append(py_blk_y, py_blk_x);
+         Py_DecRef(py_blk_x);
       }
 
-      PyList_Append(coef_arrays, list);
-      Py_DecRef(list);
+      PyList_Append(coef_arrays, py_blk_y);
+      Py_DecRef(py_blk_y);
    }
 
    py_key = Py_BuildValue("s", "coef_arrays");
@@ -479,17 +483,19 @@ void write_file(PyObject *data, const char *path)
    PyObject *py_coef_arrays = dict_get_object(data, "coef_arrays");
    for(int ci=0; ci<cinfo.num_components; ci++)
    {
-      PyObject* list = PyList_GetItem(py_coef_arrays, ci);
+      PyObject* py_blk_x = PyList_GetItem(py_coef_arrays, ci);
       jpeg_component_info *compptr = cinfo.comp_info + ci;
 
       for(size_t blk_y = 0; blk_y < compptr->height_in_blocks; blk_y++)
       {
+         PyObject* py_blk_y = PyList_GetItem(py_blk_x, blk_y);
+
          JBLOCKARRAY buffer = (cinfo.mem->access_virt_barray)
             ((j_common_ptr) &cinfo, coef_arrays[ci], blk_y, 1, TRUE);
 
          for(size_t blk_x = 0; blk_x < compptr->width_in_blocks; blk_x++)
          {
-            PyObject* row = PyList_GetItem(list, blk_y*compptr->height_in_blocks+blk_x);
+            PyObject* row = PyList_GetItem(py_blk_y, blk_x);
 
             JCOEFPTR bufptr = buffer[0][blk_x];
             for(size_t i = 0; i < DCTSIZE; i++)
