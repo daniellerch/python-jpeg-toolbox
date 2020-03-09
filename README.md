@@ -1,6 +1,7 @@
 # The JPEG Toolbox for Python
 
-This project is in development and it is an unstable version. Please use it carefully.
+This tool is similar to the well-known Matlab JPEG Toolbox. It allows to read and write JPEG low level information as, for example, the DCT coefficients. This project is in development and it is an unstable version. Please use it carefully.
+
 
 ## Install
 
@@ -14,6 +15,8 @@ pip3 uninstall jpeg-toolbox
 ```
 
 ## Reading JPEG data
+
+In this exaple we read the JPEG data: Huffman tables, quantization tables, the DCT coefficients, etc.  
 
 ```bash
 python3
@@ -175,6 +178,8 @@ python3
 ```
 
 ## Writing JPEG data
+In this example we modify a DCT coefficient. 
+
 ```bash
 python3
 >>> import jpeg_toolbox
