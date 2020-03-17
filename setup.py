@@ -1,7 +1,7 @@
 import os
 from distutils.core import setup, Extension
 
-m = Extension('jpeg_toolbox_extension', sources = ['jpeg_toolbox_extension.c'], libraries = ['jpeg'])
+m = Extension('jpeg_toolbox_extension', sources = ['jpeg_toolbox_extension.c'], static_libraries = ['jpeg'])
 
 here = os.path.abspath(os.path.dirname(__file__))
 with open(os.path.join(here, 'README.md'), encoding='utf-8') as f:
