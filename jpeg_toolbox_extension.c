@@ -239,6 +239,7 @@ PyObject* read_file(const char *path)
 
    py_key = Py_BuildValue("s", "quant_tables");
    PyDict_SetItem(result, py_key, quant_tables);
+   Py_DecRef(quant_tables);
    Py_DecRef(py_key);
    // }}}
 
@@ -283,6 +284,7 @@ PyObject* read_file(const char *path)
    py_key = Py_BuildValue("s", "ac_huff_tables");
    PyDict_SetItem(result, py_key, ac_huff_tables);
    Py_DecRef(py_key);
+   Py_DecRef(ac_huff_tables);
    // }}}
 
    // {{{ DC Huffman tables 
@@ -326,6 +328,7 @@ PyObject* read_file(const char *path)
    py_key = Py_BuildValue("s", "dc_huff_tables");
    PyDict_SetItem(result, py_key, dc_huff_tables);
    Py_DecRef(py_key);
+   Py_DecRef(dc_huff_tables);
    // }}}
 
    // {{{ DCT coefficients
@@ -380,6 +383,7 @@ PyObject* read_file(const char *path)
    py_key = Py_BuildValue("s", "coef_arrays");
    PyDict_SetItem(result, py_key, coef_arrays);
    Py_DecRef(py_key);
+   Py_DecRef(coef_arrays);
    // }}}
 
    jpeg_finish_decompress(&cinfo);
