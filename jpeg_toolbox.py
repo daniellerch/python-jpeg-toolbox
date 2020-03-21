@@ -23,7 +23,6 @@ def load(path, use_blocks=False):
     r = jpeg.read_file(path.encode())
 
     r["quant_tables"] = np.array(r["quant_tables"])
-    r["coef_arrays"] = np.array(r["coef_arrays"])
 
     for i in range(len(r["ac_huff_tables"])):
         r["ac_huff_tables"][i]["counts"] = np.array(r["ac_huff_tables"][i]["counts"])
@@ -35,10 +34,12 @@ def load(path, use_blocks=False):
 
     if not use_blocks:
         chn = len(r["coef_arrays"])
-        w = r["coef_arrays"].shape[1]*8
-        h = r["coef_arrays"].shape[2]*8
-        r["coef_arrays"] = np.moveaxis(r["coef_arrays"], [0,1,2,3,4], [0,1,3,2,4])
-        r["coef_arrays"] = r["coef_arrays"].reshape((chn, w, h))
+        for c in range(chn):
+            r["coef_arrays"][c] = np.array(r["coef_arrays"][c])
+            w = r["coef_arrays"][c].shape[0]*8
+            h = r["coef_arrays"][c].shape[1]*8
+            r["coef_arrays"][c] = np.moveaxis(r["coef_arrays"][c], [0,1,2,3], [0,2,1,3])
+            r["coef_arrays"][c] = r["coef_arrays"][c].reshape((w, h))
 
     return r
 
@@ -60,12 +61,12 @@ def save(data, path, use_blocks=False):
 
     if not use_blocks:
         chn = len(r["coef_arrays"])
-        w = r["coef_arrays"].shape[1]
-        h = r["coef_arrays"].shape[2]
-        r["coef_arrays"] = r["coef_arrays"].reshape((chn, w//8, 8, h//8, 8))
-        r["coef_arrays"] = np.moveaxis(r["coef_arrays"], [0,1,2,3,4], [0,1,3,2,4])
-
-    r["coef_arrays"] = r["coef_arrays"].tolist()
+        for c in range(chn):
+            w = r["coef_arrays"][c].shape[0]
+            h = r["coef_arrays"][c].shape[1]
+            r["coef_arrays"][c] = r["coef_arrays"][c].reshape((w//8, 8, h//8, 8))
+            r["coef_arrays"][c] = np.moveaxis(r["coef_arrays"][c], [0,1,2,3], [0,2,1,3])
+            r["coef_arrays"][c] = r["coef_arrays"][c].tolist()
 
 
     jpeg.write_file(r, path.encode())
