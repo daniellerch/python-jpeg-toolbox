@@ -464,14 +464,21 @@ void write_file(PyObject *data, const char *path)
 
 
    /* DCT coefficients */
+   PyObject *py_coef_arrays = dict_get_object(data, "coef_arrays");
+   PyObject* py_tmp1 = PyList_GetItem(py_coef_arrays, 0);
+   PyObject* py_tmp2 = PyList_GetItem(py_tmp1, 0);
+   int width_in_blocks = PyList_Size(py_tmp1);
+   int height_in_blocks = PyList_Size(py_tmp2);
+
    jvirt_barray_ptr *coef_arrays = (jvirt_barray_ptr *)
       (cinfo.mem->alloc_small) ((j_common_ptr) &cinfo, JPOOL_IMAGE,
             sizeof(jvirt_barray_ptr) * cinfo.num_components);
    for(int ci=0; ci<cinfo.num_components; ci++)
    {
       jpeg_component_info *compptr = cinfo.comp_info + ci;
-      compptr->height_in_blocks = cinfo.image_width / DCTSIZE;
-      compptr->width_in_blocks = cinfo.image_height / DCTSIZE;
+      compptr->height_in_blocks = height_in_blocks;
+      compptr->width_in_blocks = width_in_blocks;
+
 
       coef_arrays[ci] = (cinfo.mem->request_virt_barray)
          ((j_common_ptr) &cinfo, JPOOL_IMAGE, TRUE,
@@ -490,7 +497,6 @@ void write_file(PyObject *data, const char *path)
    jpeg_write_coefficients(&cinfo, coef_arrays);
 
    /* populate DCT coefficients */
-   PyObject *py_coef_arrays = dict_get_object(data, "coef_arrays");
    for(int ci=0; ci<cinfo.num_components; ci++)
    {
       PyObject* py_blk_x = PyList_GetItem(py_coef_arrays, ci);

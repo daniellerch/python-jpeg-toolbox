@@ -29,8 +29,8 @@ def load(path, use_blocks=False):
 
    if not use_blocks:
       chn = len(r["coef_arrays"])
-      w = r["image_width"]
-      h = r["image_height"]
+      w = r["coef_arrays"].shape[1]*8
+      h = r["coef_arrays"].shape[2]*8
       r["coef_arrays"] = np.moveaxis(r["coef_arrays"], [0,1,2,3,4], [0,1,3,2,4])
       r["coef_arrays"] = r["coef_arrays"].reshape((chn, w, h))
 
@@ -54,8 +54,8 @@ def save(data, path, use_blocks=False):
 
    if not use_blocks:
       chn = len(r["coef_arrays"])
-      w = r["image_width"]
-      h = r["image_height"]
+      w = r["coef_arrays"].shape[1]
+      h = r["coef_arrays"].shape[2]
       r["coef_arrays"] = r["coef_arrays"].reshape((chn, w//8, 8, h//8, 8))
       r["coef_arrays"] = np.moveaxis(r["coef_arrays"], [0,1,2,3,4], [0,1,3,2,4])
 
