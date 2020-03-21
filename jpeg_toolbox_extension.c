@@ -458,6 +458,7 @@ void write_file(PyObject *data, const char *path)
       cinfo.comp_info[ci].dc_tbl_no = dict_get_int(item, "dc_tbl_no");
    }
 
+
    /* DCT coefficients */
    jvirt_barray_ptr *coef_arrays = (jvirt_barray_ptr *)
       (cinfo.mem->alloc_small) ((j_common_ptr) &cinfo, JPOOL_IMAGE,
@@ -476,6 +477,11 @@ void write_file(PyObject *data, const char *path)
              (long) compptr->v_samp_factor),
           (JDIMENSION) compptr->v_samp_factor);
    }
+
+#if JPEG_LIB_VERSION >= 80
+   cinfo.jpeg_width = cinfo.image_width;
+   cinfo.jpeg_height = cinfo.image_height;
+#endif
 
    jpeg_write_coefficients(&cinfo, coef_arrays);
 
