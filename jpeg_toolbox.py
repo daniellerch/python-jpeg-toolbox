@@ -38,7 +38,6 @@ def load(path, use_blocks=False):
             r["coef_arrays"][c] = np.array(r["coef_arrays"][c])
             h = r["coef_arrays"][c].shape[0]*8
             w = r["coef_arrays"][c].shape[1]*8
-            print(w, h)
             r["coef_arrays"][c] = np.moveaxis(r["coef_arrays"][c], [0,1,2,3], [0,2,1,3])
             r["coef_arrays"][c] = r["coef_arrays"][c].reshape((h, w))
 
