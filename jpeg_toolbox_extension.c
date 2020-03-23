@@ -467,8 +467,8 @@ void write_file(PyObject *data, const char *path)
    PyObject *py_coef_arrays = dict_get_object(data, "coef_arrays");
    PyObject* py_tmp1 = PyList_GetItem(py_coef_arrays, 0);
    PyObject* py_tmp2 = PyList_GetItem(py_tmp1, 0);
-   int width_in_blocks = PyList_Size(py_tmp1);
-   int height_in_blocks = PyList_Size(py_tmp2);
+   int height_in_blocks = PyList_Size(py_tmp1);
+   int width_in_blocks = PyList_Size(py_tmp2);
 
    jvirt_barray_ptr *coef_arrays = (jvirt_barray_ptr *)
       (cinfo.mem->alloc_small) ((j_common_ptr) &cinfo, JPOOL_IMAGE,

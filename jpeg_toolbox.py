@@ -36,10 +36,11 @@ def load(path, use_blocks=False):
         chn = len(r["coef_arrays"])
         for c in range(chn):
             r["coef_arrays"][c] = np.array(r["coef_arrays"][c])
-            w = r["coef_arrays"][c].shape[0]*8
-            h = r["coef_arrays"][c].shape[1]*8
+            h = r["coef_arrays"][c].shape[0]*8
+            w = r["coef_arrays"][c].shape[1]*8
+            print(w, h)
             r["coef_arrays"][c] = np.moveaxis(r["coef_arrays"][c], [0,1,2,3], [0,2,1,3])
-            r["coef_arrays"][c] = r["coef_arrays"][c].reshape((w, h))
+            r["coef_arrays"][c] = r["coef_arrays"][c].reshape((h, w))
 
     return r
 
@@ -62,9 +63,9 @@ def save(data, path, use_blocks=False):
     if not use_blocks:
         chn = len(r["coef_arrays"])
         for c in range(chn):
-            w = r["coef_arrays"][c].shape[0]
-            h = r["coef_arrays"][c].shape[1]
-            r["coef_arrays"][c] = r["coef_arrays"][c].reshape((w//8, 8, h//8, 8))
+            h = r["coef_arrays"][c].shape[0]
+            w = r["coef_arrays"][c].shape[1]
+            r["coef_arrays"][c] = r["coef_arrays"][c].reshape((h//8, 8, w//8, 8))
             r["coef_arrays"][c] = np.moveaxis(r["coef_arrays"][c], [0,1,2,3], [0,2,1,3])
             r["coef_arrays"][c] = r["coef_arrays"][c].tolist()
 
