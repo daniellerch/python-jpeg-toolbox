@@ -22,7 +22,7 @@ def load(path, use_blocks=False):
     jpeg.read_file.restype = py_object
     r = jpeg.read_file(path.encode())
 
-    r["quant_tables"] = np.array(r["quant_tables"])
+    r["quant_tables"] = np.array(r["quant_tables"]).astype('int32')
 
     for i in range(len(r["ac_huff_tables"])):
         r["ac_huff_tables"][i]["counts"] = np.array(r["ac_huff_tables"][i]["counts"])

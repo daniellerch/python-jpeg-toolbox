@@ -181,7 +181,7 @@ In this example we modify a DCT coefficient.
 ```bash
 python3
 >>> import jpeg_toolbox
->>> jpeg_toolbox.load('lena.jpg')
+>>> img = jpeg_toolbox.load('lena.jpg')
 >>> img["coef_arrays"][0][0][0] = 85
 >>> jpeg_toolbox.save(img, 'lena2.jpg')
 ```
