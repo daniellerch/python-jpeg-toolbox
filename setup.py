@@ -37,7 +37,7 @@ setup(name = 'python-jpeg-toolbox',
       packages=find_packages(),
       ext_modules = [jpeg_extension],
       package_data={"jpeg_toolbox": 
-        ["libs/libjpeg.so.9", "../LICENSE-libjpeg-turbo.txt"]},
+        ["libs/libjpeg.so.9", "../LICENSE-libjpeg.txt"]},
       include_package_data=True,
       classifiers=[
         "Programming Language :: Python :: 3",
