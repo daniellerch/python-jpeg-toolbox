@@ -7,9 +7,7 @@ import errno
 from ctypes import *
 import numpy as np
 from ctypes.util import find_library
-
-so = glob.glob(os.path.join(os.path.dirname(__file__), 'jpeg_toolbox_extension.*.so'))
-SO_PATH = so[0]
+from . import jpeg_toolbox as jpeg
 
 def load(path, use_blocks=False):
 
@@ -17,7 +15,6 @@ def load(path, use_blocks=False):
         raise FileNotFoundError(errno.ENOENT, 
                 os.strerror(errno.ENOENT), path)
 
-    jpeg = CDLL(SO_PATH)
     jpeg.write_file.argtypes = c_char_p,
     jpeg.read_file.restype = py_object
     r = jpeg.read_file(path.encode())
@@ -45,7 +42,6 @@ def load(path, use_blocks=False):
 
 
 def save(data, path, use_blocks=False):
-    jpeg = CDLL(SO_PATH)
     jpeg.write_file.argtypes = py_object,c_char_p
 
     r = copy.deepcopy(data)

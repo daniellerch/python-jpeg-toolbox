@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <jerror.h>
 #include <jpeglib.h>
-#include <jpegint.h>
+//#include <jpegint.h>
 #include <setjmp.h>
 #include <Python.h>
 

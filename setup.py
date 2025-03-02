@@ -1,19 +1,51 @@
-import os
-from distutils.core import setup, Extension
+import os, sys
+from setuptools import setup, Extension, find_packages
 
-m = Extension('jpeg_toolbox_extension', 
-              sources = ['jpeg_toolbox_extension.c'], 
-              libraries = ['jpeg'])
 
-here = os.path.abspath(os.path.dirname(__file__))
-with open(os.path.join(here, 'README.md'), encoding='utf-8') as f:
-        long_description = f.read()
+if sys.platform == "win32":
+    extra_compile_args = ["/std:c++11"]
+    extra_link_args = []
+elif sys.platform == "darwin":
+    extra_compile_args = ["-std=c++11", "-stdlib=libc++"]
+    extra_link_args = []
+else:
+    extra_compile_args = ["-std=c++11", "-Wno-narrowing"]
+    extra_link_args = []
 
-setup(name = 'jpeg-toolbox',
-      version = '1.0',
-      author="Daniel Lerch",
+jpeg_extension = Extension(
+    "jpeg_toolbox.jpeg_extension",
+    include_dirs=["pyjpeg/"],
+    sources=["jpeg_toolbox/jpeg_toolbox_extension.c"],
+    libraries=["jpeg"],
+    extra_compile_args=extra_compile_args,
+    extra_link_args=extra_link_args,
+    language="c++",
+)
+
+
+setup(name = 'python-jpeg-toolbox',
+      version = '0.1.0',
+      author="Daniel Lerch Hostalot",
       author_email="dlerch@gmail.com",
       url="https://github.com/daniellerch/python-jpeg-toolbox",
       description = 'The JPEG Toolbox for Python',
-      py_modules = ["jpeg_toolbox"],
-      ext_modules = [m])
+      long_description=open("README.md").read(),
+      long_description_content_type="text/markdown",
+      install_requires=[
+        "numpy",
+      ],
+      packages=find_packages(),
+      ext_modules = [jpeg_extension],
+      package_data={"jpeg_toolbox": 
+        ["libs/libjpeg.so.9", "../LICENSE-libjpeg-turbo.txt"]},
+      include_package_data=True,
+      classifiers=[
+        "Programming Language :: Python :: 3",
+        "License :: OSI Approved :: MIT License",
+        "Operating System :: OS Independent",
+      ],
+      python_requires='>=3.6',
+)
+
+
+
