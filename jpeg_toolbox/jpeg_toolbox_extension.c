@@ -19,6 +19,18 @@ typedef SSIZE_T ssize_t;
 #define LIBRARY_API 
 #endif
 
+PyMODINIT_FUNC PyInit_jpeg_extension(void) {
+    static struct PyModuleDef moduledef = {
+        PyModuleDef_HEAD_INIT,
+        "jpeg_extension",
+        NULL,
+        -1,
+        NULL, NULL, NULL, NULL, NULL
+    };
+    return PyModule_Create(&moduledef);
+}
+
+
 
 
 // {{{ struct my_error_mgr
