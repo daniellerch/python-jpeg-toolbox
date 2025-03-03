@@ -2,18 +2,19 @@
 
 This tool is similar to the well-known Matlab JPEG Toolbox. It allows to read and write JPEG low level information as, for example, the DCT coefficients. This project is in development and it is an unstable version. Please use it carefully.
 
-NOTE: Currently, python-jpeg-toolbox only works on Linux.
 
 ## Install
 
+To install **python-jpeg-toolbox**, simply use `pip`:
+
 ```bash
-pip3 install git+https://github.com/daniellerch/python-jpeg-toolbox --user
+pip3 install python-jpeg-toolbox
 ```
 
-## Uninstall
-```bash
-pip3 uninstall jpeg-toolbox
-```
+This will install the latest version along with its dependencies.
+
+
+
 
 ## Reading JPEG data
 
